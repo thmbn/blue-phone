@@ -2,9 +2,15 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createExplosions } from './explosions.js';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
+import nipplejs from 'nipplejs';
 
 // DOM elements
 const explosionTypeEl = document.getElementById('explosion-type');
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+
+// Show appropriate instructions based on device
+document.getElementById('desktop-instructions').style.display = isMobile ? 'none' : 'block';
+document.getElementById('mobile-instructions').style.display = isMobile ? 'block' : 'none';
 
 // Scene setup
 const scene = new THREE.Scene();
@@ -503,21 +509,75 @@ function createIPhone() {
   return phoneGroup;
 }
 
-// Separate game logic setup to improve organization
+// Function to setup game logic with the phone model
 function setupGameLogic(phone) {
+  // Variables for player control
+  const mouse = new THREE.Vector2();
+  const raycaster = new THREE.Raycaster();
+  const playerPosition = new THREE.Vector3(0, 0, 0);
+  let phoneThrown = false;
+  let currentExplosionType = 1;
+  let maxExplosionTypes = 9; // Update this based on actual number of explosion types
+  
   // Physics variables
+  const gravity = new THREE.Vector3(0, -0.01, 0);
+  let phoneInHand = true;
   let isThrown = false;
   let velocity = new THREE.Vector3();
-  let gravity = new THREE.Vector3(0, -0.01, 0);
-  let throwStrength = 2.5;
-  let phoneInHand = true;
+  let throwStrength = 1.2;
   
-  // Create a bounding box for the phone
-  const phoneBoundingBox = new THREE.Box3();
-
+  // Initialize joystick for mobile
+  let joystick = null;
+  let joystickData = { force: 0, angle: { radian: 0 } };
+  
+  if (isMobile) {
+    joystick = nipplejs.create({
+      zone: document.getElementById('joystick-zone'),
+      mode: 'static',
+      position: { left: '60px', bottom: '60px' },
+      color: 'white',
+      size: 100
+    });
+    
+    joystick.on('move', (evt, data) => {
+      joystickData = data;
+    });
+    
+    joystick.on('end', () => {
+      joystickData = { force: 0, angle: { radian: 0 } };
+    });
+    
+    // Add throw button event
+    const throwButton = document.getElementById('throw-button');
+    throwButton.addEventListener('touchstart', (event) => {
+      event.preventDefault();
+      if (phoneInHand) {
+        throwPhone();
+      }
+    });
+    
+    // Create explosion selector buttons
+    const explosionSelector = document.getElementById('explosion-selector');
+    for (let i = 1; i <= Math.min(maxExplosionTypes, 5); i++) {
+      const button = document.createElement('div');
+      button.className = 'explosion-option';
+      button.textContent = i;
+      button.dataset.type = i;
+      if (i === currentExplosionType) button.classList.add('active');
+      
+      button.addEventListener('touchstart', (event) => {
+        event.preventDefault();
+        document.querySelectorAll('.explosion-option').forEach(el => el.classList.remove('active'));
+        button.classList.add('active');
+        currentExplosionType = parseInt(button.dataset.type);
+        explosionTypeEl.textContent = `Current Explosion: ${currentExplosionType}`;
+      });
+      
+      explosionSelector.appendChild(button);
+    }
+  }
+  
   // Aim raycaster
-  const raycaster = new THREE.Raycaster();
-  const mouse = new THREE.Vector2();
   const aimHelper = new THREE.ArrowHelper(
     new THREE.Vector3(0, 0, -1),
     new THREE.Vector3(0, 0, 0),
@@ -525,9 +585,6 @@ function setupGameLogic(phone) {
     0xff0000
   );
   scene.add(aimHelper);
-
-  // Explosion type
-  let currentExplosionType = 1;
 
   // Load explosion effects
   const explosions = createExplosions(scene);
@@ -557,56 +614,74 @@ function setupGameLogic(phone) {
   // Initialize human's phone
   createHumanPhone();
 
-  // User Input
-  window.addEventListener('mousemove', (event) => {
+  // Mouse move event for desktop
+  document.addEventListener('mousemove', (event) => {
+    if (isMobile) return; // Skip for mobile
+    
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -((event.clientY / window.innerHeight) * 2 - 1);
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   });
-
-  window.addEventListener('keydown', (event) => {
+  
+  // Keyboard event for desktop
+  document.addEventListener('keydown', (event) => {
+    if (isMobile) return; // Skip for mobile
+    
+    // Throwing the phone with spacebar
     if (event.code === 'Space' && phoneInHand) {
       throwPhone();
     }
     
-    // Change explosion type with number keys 1-9
-    const num = parseInt(event.key);
-    if (!isNaN(num) && num >= 1 && num <= 9) {
-      currentExplosionType = num;
+    // Select explosion type with number keys
+    if (event.key >= '1' && event.key <= '9') {
+      currentExplosionType = parseInt(event.key);
       explosionTypeEl.textContent = `Current Explosion: ${currentExplosionType}`;
     }
   });
-
-  // Window resize handler
+  
+  // Responsive resize
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
-
-  // Function to throw the phone
+  
+  // Phone throwing function
   function throwPhone() {
-    if (phoneInHand) {
-      // Set the initial position in front of the camera
-      phone.position.set(0, 0, 3);
-      
-      // Get the direction based on mouse position
+    if (!phoneInHand) return;
+    
+    phoneInHand = false;
+    isThrown = true;
+    
+    // Set velocity based on aim direction
+    if (isMobile) {
+      // Use joystick data for direction on mobile
+      if (joystickData.force > 0) {
+        const angle = joystickData.angle.radian;
+        velocity = new THREE.Vector3(
+          -Math.cos(angle) * (joystickData.force / 50),
+          0.3,
+          -Math.sin(angle) * (joystickData.force / 50)
+        );
+      } else {
+        velocity = new THREE.Vector3(0, 0.3, -1); // Default forward throw
+      }
+    } else {
+      // Use mouse position for desktop
       raycaster.setFromCamera(mouse, camera);
-      
-      // Calculate throw direction
       velocity = raycaster.ray.direction.clone().multiplyScalar(throwStrength);
-      
-      // Add spin to the phone
-      phone.rotation.set(
-        Math.random() * Math.PI * 2,
-        Math.random() * Math.PI * 2,
-        Math.random() * Math.PI * 2
-      );
-      
-      phoneInHand = false;
-      isThrown = true;
-      
-      console.log("Phone thrown with velocity:", velocity);
     }
+    
+    // Set the initial position in front of the camera
+    phone.position.set(0, 0, 3);
+    
+    // Add rotation to the phone
+    phone.rotation.set(
+      Math.random() * Math.PI * 2,
+      Math.random() * Math.PI * 2,
+      Math.random() * Math.PI * 2
+    );
+    
+    console.log("Phone thrown with velocity:", velocity);
   }
   
   // Function for the human to throw a phone at the player
@@ -674,7 +749,7 @@ function setupGameLogic(phone) {
   // Function to check collision with the human model
   function checkHumanCollision() {
     // Update the phone's bounding box
-    phoneBoundingBox.setFromObject(phone);
+    const phoneBoundingBox = new THREE.Box3().setFromObject(phone);
     
     // Update the human model's bounding box (in case it moved)
     humanBoundingBox.setFromObject(humanModel);
@@ -791,9 +866,9 @@ function setupGameLogic(phone) {
       aimHelper.setDirection(raycaster.ray.direction);
     }
     
-    // Update thrown phone position
+    // Update phone position based on controls
     if (isThrown) {
-      // Apply velocity and gravity
+      // Apply velocity and gravity for thrown phone
       phone.position.add(velocity);
       velocity.add(gravity);
       
@@ -802,7 +877,7 @@ function setupGameLogic(phone) {
       phone.rotation.y += 0.05;
       phone.rotation.z += 0.03;
       
-      // Check for collisions with human model instead of wall
+      // Check for collisions
       checkHumanCollision();
       
       // Check if phone is out of bounds
@@ -813,12 +888,33 @@ function setupGameLogic(phone) {
         resetPhone();
       }
     } else if (phoneInHand) {
-      // Position the phone in the hand/camera view
-      phone.position.set(
-        camera.position.x + 1,
-        camera.position.y - 1,
-        camera.position.z
-      );
+      if (isMobile) {
+        // Position phone based on joystick for aiming
+        if (joystickData.force > 0) {
+          const angle = joystickData.angle.radian;
+          const magnitude = Math.min(joystickData.force / 100, 0.5);
+          
+          phone.position.set(
+            camera.position.x + Math.cos(angle) * magnitude,
+            camera.position.y - 0.5,
+            camera.position.z + Math.sin(angle) * magnitude
+          );
+        } else {
+          // Default position when joystick is not used
+          phone.position.set(
+            camera.position.x + 0.5,
+            camera.position.y - 0.5,
+            camera.position.z
+          );
+        }
+      } else {
+        // Desktop mouse control
+        phone.position.set(
+          camera.position.x + 0.5,
+          camera.position.y - 0.5,
+          camera.position.z
+        );
+      }
     }
     
     // Update human movement

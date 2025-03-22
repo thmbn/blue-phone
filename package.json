@@ -4,7 +4,7 @@
   "description": "A 3D game where you throw iPhones at walls",
   "main": "src/index.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build"
   },
   "dependencies": {
@@ -14,4 +14,4 @@
   "devDependencies": {
     "vite": "^5.0.0"
   }
-} 
+}
