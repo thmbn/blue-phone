@@ -21,6 +21,7 @@
       background: rgba(0, 0, 0, 0.5);
       padding: 10px;
       border-radius: 5px;
+      max-width: 80%;
     }
     #explosion-type {
       position: absolute;
@@ -32,15 +33,108 @@
       padding: 10px;
       border-radius: 5px;
     }
+    #mobile-controls {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 30vh;
+      z-index: 100;
+      pointer-events: none;
+    }
+    #joystick-zone {
+      pointer-events: auto;
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+    }
+    #throw-button {
+      pointer-events: auto;
+      position: absolute;
+      bottom: 40px;
+      right: 40px;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(255, 0, 0, 0.5);
+      border: 4px solid rgba(255, 255, 255, 0.5);
+      color: white;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      user-select: none;
+    }
+    #explosion-selector {
+      pointer-events: auto;
+      position: absolute;
+      bottom: 130px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .explosion-option {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.5);
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .explosion-option.active {
+      background: rgba(50, 150, 255, 0.7);
+    }
+    /* Responsive styles */
+    @media (max-width: 768px) {
+      #instructions {
+        font-size: 12px;
+        bottom: auto;
+        top: 20px;
+        left: 20px;
+      }
+      #mobile-controls {
+        display: block;
+      }
+      #desktop-instructions {
+        display: none;
+      }
+    }
   </style>
 </head>
 <body>
   <div id="instructions">
-    <p>Use MOUSE to aim</p>
-    <p>Press SPACEBAR to throw the iPhone</p>
-    <p>Press 1-9 to select different explosion types</p>
+    <div id="desktop-instructions">
+      <p>Use MOUSE to aim</p>
+      <p>Press SPACEBAR to throw the iPhone</p>
+      <p>Press 1-9 to select different explosion types</p>
+    </div>
+    <div id="mobile-instructions" style="display:none;">
+      <p>Use joystick to aim</p>
+      <p>Tap throw button to throw the iPhone</p>
+      <p>Select explosion type from the buttons</p>
+    </div>
   </div>
   <div id="explosion-type">Current Explosion: 1</div>
+  
+  <div id="mobile-controls">
+    <div id="joystick-zone"></div>
+    <div id="throw-button">THROW</div>
+    <div id="explosion-selector">
+      <!-- Will be populated dynamically -->
+    </div>
+  </div>
+  
   <script type="module" src="/src/main.js"></script>
 </body>
 </html> 
