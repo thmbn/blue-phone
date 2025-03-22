@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iPhone Wall Throw</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+    #instructions {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      color: white;
+      font-family: Arial, sans-serif;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 5px;
+    }
+    #explosion-type {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: white;
+      font-family: Arial, sans-serif;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="instructions">
+    <p>Use MOUSE to aim</p>
+    <p>Press SPACEBAR to throw the iPhone</p>
+    <p>Press 1-9 to select different explosion types</p>
+  </div>
+  <div id="explosion-type">Current Explosion: 1</div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html> 

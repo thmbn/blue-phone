@@ -1,0 +1,16 @@
+{
+  "name": "iphone-wall-throw",
+  "version": "1.0.0",
+  "description": "A 3D game where you throw iPhones at walls",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "three": "^0.159.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+} 
